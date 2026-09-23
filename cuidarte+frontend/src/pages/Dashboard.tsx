@@ -1,12 +1,32 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Typography, Box, Paper, Button, Divider } from '@mui/material';
-import { People, Assignment } from '@mui/icons-material';
+import { People, Assignment, ManageAccounts } from '@mui/icons-material';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../api/axios'; // Importante para hacer la petición a la BD
 
 export const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  
+  // Estado para almacenar los números reales de la BD
+  const [stats, setStats] = useState({ pacientes: 0, examenesTotal: 0, examenesPendientes: 0 });
+
+  // Cargar estadísticas al montar el componente
+  useEffect(() => {
+    const loadStats = async () => {
+      // Solo pedimos las estadísticas si el usuario tiene permisos
+      if (user?.rol === 'administrador' || user?.rol === 'medico') {
+        try {
+          const res = await api.get('/examenes/stats/dashboard');
+          setStats(res.data);
+        } catch (error) {
+          console.error("Error al cargar estadísticas del dashboard", error);
+        }
+      }
+    };
+    loadStats();
+  }, [user]);
 
   return (
     <Box>
@@ -18,15 +38,16 @@ export const Dashboard = () => {
       {(user?.rol === 'administrador' || user?.rol === 'medico') && (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mb: 4 }}>
           <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>5</Typography>
+            {/* Ahora usamos las variables de estado en lugar del número fijo */}
+            <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>{stats.pacientes}</Typography>
             <Typography variant="body2" color="text.secondary">Pacientes registrados</Typography>
           </Box>
           <Box sx={{ textAlign: 'center', borderLeft: { md: '1px solid #e0e0e0' }, borderRight: { md: '1px solid #e0e0e0' } }}>
-            <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>5</Typography>
+            <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>{stats.examenesTotal}</Typography>
             <Typography variant="body2" color="text.secondary">Exámenes en el sistema</Typography>
           </Box>
           <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>2</Typography>
+            <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>{stats.examenesPendientes}</Typography>
             <Typography variant="body2" color="text.secondary">Exámenes pendientes</Typography>
           </Box>
         </Box>
@@ -55,7 +76,7 @@ export const Dashboard = () => {
           <>
             <Paper sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <People sx={{ color: 'primary.main' }} />
+                <ManageAccounts sx={{ color: 'primary.main' }} />
                 <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Gestión de usuarios</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3, minHeight: 40 }}>

@@ -3,11 +3,11 @@ import { createTheme } from '@mui/material/styles';
 export const theme = createTheme({
   palette: {
     mode: 'light',
-    primary: { main: '#0f172a', contrastText: '#ffffff' }, // Slate 900 (Color oscuro principal)
-    secondary: { main: '#64748b', contrastText: '#ffffff' }, // Slate 500 (Gris secundario)
-    info: { main: '#0ea5e9', contrastText: '#ffffff' }, // Sky 500 (Azul claro)
+    primary: { main: '#064e64', contrastText: '#ffffff' }, // Azul petróleo del sidebar
+    secondary: { main: '#008763', contrastText: '#ffffff' }, // Verde esmeralda
+    info: { main: '#0ea5e9', contrastText: '#ffffff' },
     background: { default: '#f8fafc', paper: '#ffffff' },
-    text: { primary: '#0f172a', secondary: '#475569' },
+    text: { primary: '#064e64', secondary: '#475569' }, // Los textos principales ahora son azul petróleo
   },
   typography: {
     fontFamily: '"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif',

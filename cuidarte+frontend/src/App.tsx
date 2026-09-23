@@ -11,9 +11,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Users } from './pages/Users';
 import { Audit } from './pages/Audit';
 import { PatientDetail } from './pages/PatientDetail';
-
-// Vista provisional para exámenes (si entra un paciente)
-const Exams = () => <div>Vista de Exámenes</div>;
+import { Exams } from './pages/Exams';
 
 const App = () => {
   return (

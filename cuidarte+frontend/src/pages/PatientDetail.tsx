@@ -1,25 +1,51 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Paper, Chip, Divider, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem } from '@mui/material';
 import { ArrowBack, ExpandMore, ExpandLess, PictureAsPdf, Delete, Edit, UploadFile } from '@mui/icons-material';
 import api from '../api/axios';
+import { AuthContext } from '../context/AuthContext';
 
 export const PatientDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  
   const [paciente, setPaciente] = useState<any>(null);
   const [examenes, setExamenes] = useState<any[]>([]);
   const [medicos, setMedicos] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Estados para Registrar Examen
   const [openModal, setOpenModal] = useState(false);
   const [examData, setExamData] = useState({ tipo_examen: '', fecha: '', medico_responsable: '', estado: 'Pendiente', resultado: '', observaciones: '' });
   const [archivoPDF, setArchivoPDF] = useState<File | null>(null);
+
+  // Estados para Editar Paciente
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    nombre_completo: '',
+    rut: '',
+    edad: '',
+    prevision: '',
+    telefono: '',
+    correo: ''
+  });
 
   const fetchData = async () => {
     try {
       const resPac = await api.get(`/pacientes/${id}`);
       setPaciente(resPac.data);
+      
+      // Cargar los datos actuales en el formulario de edición
+      setEditFormData({
+        nombre_completo: resPac.data.nombre_completo || '',
+        rut: resPac.data.rut || '',
+        edad: resPac.data.edad || '',
+        prevision: resPac.data.prevision || 'Ninguna',
+        telefono: resPac.data.telefono || '',
+        correo: resPac.data.correo || ''
+      });
+
       const resExa = await api.get(`/examenes/paciente/${id}`);
       setExamenes(resExa.data);
       
@@ -31,6 +57,21 @@ export const PatientDetail = () => {
   };
 
   useEffect(() => { fetchData(); }, [id]);
+
+  // Función para guardar la edición del paciente
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.put(`/pacientes/${id}`, {
+        ...editFormData,
+        edad: Number(editFormData.edad)
+      });
+      setOpenEditModal(false);
+      fetchData(); // Recargar los datos para que se reflejen de inmediato
+    } catch (error) {
+      alert("Error al actualizar los datos del paciente.");
+    }
+  };
 
   const handleSaveExam = async () => {
     try {
@@ -96,9 +137,21 @@ export const PatientDetail = () => {
             {paciente.rut} - {paciente.edad} años - {paciente.prevision}
           </Typography>
         </Box>
-        <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>
-          + Registrar examen
-        </Button>
+        
+        {/* Contenedor con los dos botones: Editar y Registrar */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {(user?.rol === 'administrador' || user?.rol === 'medico') && (
+            <Button variant="outlined" startIcon={<Edit />} onClick={() => setOpenEditModal(true)}>
+              Editar ficha
+            </Button>
+          )}
+          
+          {(user?.rol === 'administrador' || user?.rol === 'medico') && (
+            <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>
+              + Registrar examen
+            </Button>
+          )}
+        </Box>
       </Box>
 
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
@@ -178,7 +231,81 @@ export const PatientDetail = () => {
         </Paper>
       ))}
 
-      {/* MODAL REGISTRAR EXAMEN CON SELECT DE MÉDICOS */}
+      {/* MODAL PARA EDITAR FICHA MÉDICA */}
+      <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>Editar información del paciente</DialogTitle>
+        <form onSubmit={handleEditSubmit}>
+          <DialogContent dividers>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <TextField 
+                label="Nombre Completo" 
+                value={editFormData.nombre_completo}
+                onChange={(e) => setEditFormData({...editFormData, nombre_completo: e.target.value})}
+                required
+                fullWidth
+                size="small"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField 
+                  label="RUT (Ej: 11222333-4)" 
+                  value={editFormData.rut}
+                  onChange={(e) => setEditFormData({...editFormData, rut: e.target.value})}
+                  required
+                  fullWidth
+                  size="small"
+                />
+                <TextField 
+                  label="Edad" 
+                  type="number"
+                  value={editFormData.edad}
+                  onChange={(e) => setEditFormData({...editFormData, edad: e.target.value})}
+                  required
+                  fullWidth
+                  size="small"
+                />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField 
+                  select 
+                  label="Previsión" 
+                  fullWidth 
+                  size="small" 
+                  value={editFormData.prevision} 
+                  onChange={e => setEditFormData({...editFormData, prevision: e.target.value})}
+                >
+                  <MenuItem value="Ninguna">Ninguna</MenuItem>
+                  <MenuItem value="Fonasa A">Fonasa A</MenuItem>
+                  <MenuItem value="Fonasa B">Fonasa B</MenuItem>
+                  <MenuItem value="Fonasa C">Fonasa C</MenuItem>
+                  <MenuItem value="Fonasa D">Fonasa D</MenuItem>
+                  <MenuItem value="Isapre">Isapre</MenuItem>
+                </TextField>
+                <TextField 
+                  label="Teléfono" 
+                  value={editFormData.telefono}
+                  onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})}
+                  fullWidth
+                  size="small"
+                />
+              </Box>
+              <TextField 
+                label="Correo (Opcional)" 
+                type="email"
+                value={editFormData.correo}
+                onChange={(e) => setEditFormData({...editFormData, correo: e.target.value})}
+                fullWidth
+                size="small"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setOpenEditModal(false)} color="inherit">Cancelar</Button>
+            <Button type="submit" variant="contained" color="primary">Guardar cambios</Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* MODAL REGISTRAR EXAMEN */}
       <Dialog open={openModal} onClose={() => { setOpenModal(false); setArchivoPDF(null); }} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 'bold' }}>Registrar nuevo examen</DialogTitle>
         <DialogContent dividers>
@@ -225,7 +352,7 @@ export const PatientDetail = () => {
               </Typography>
               <input 
                 type="file" 
-                accept="application/pdf" 
+                accept=".pdf, .doc, .docx, .ppt, .pptx, .jpg, .jpeg, .png" 
                 onChange={(e) => setArchivoPDF(e.target.files ? e.target.files[0] : null)} 
                 style={{ fontSize: '0.85rem' }} 
               />
